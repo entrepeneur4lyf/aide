@@ -124,6 +124,7 @@ async function checkForUpdates(zipDestination: string) {
 	} else if (!currentVersionResponse.package_version) {
 		console.log('Current sidecar version is unknown. Likely an old version, fetching the latest');
 		await fetchSidecarWithProgress(zipDestination);
+		await restartSidecarBinary(path.dirname(zipDestination));
 		return;
 	}
 
@@ -136,6 +137,7 @@ async function checkForUpdates(zipDestination: string) {
 		if (gt(data.package_version, currentVersionResponse.package_version)) {
 			console.log(`New sidecar version available: ${data.package_version}`);
 			await fetchSidecarWithProgress(zipDestination, data.package_version);
+			await restartSidecarBinary(path.dirname(zipDestination));
 		} else {
 			console.log(`Current sidecar version is up to date: ${currentVersionResponse.package_version}`);
 			return;
