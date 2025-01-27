@@ -54,6 +54,26 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 
 		this.isVisible = CS_ACCOUNT_CARD_VISIBLE.bindTo(this.contextKeyService);
 		this.refresh();
+
+		// Listen for authentication changes
+		this._register(this.csAuthenticationService.onDidAuthenticate(session => {
+			this.authenticatedSession = session;
+			if (this.isVisible.get()) {
+				this.hide();
+				this.show();
+			}
+		}));
+	}
+
+	private async handleLogin(): Promise<void> {
+		try {
+			const session = await this.csAuthenticationService.createSession();
+			this.authenticatedSession = session;
+			this.hide();
+			this.show();
+		} catch (error) {
+			this.notificationService.error('Failed to log in. Please try again.');
+		}
 	}
 
 	private async refresh(): Promise<void> {
@@ -178,14 +198,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 
 			const loginButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			loginButton.label = 'Log In...';
-			this._register(loginButton.onDidClick(() => {
-				this.csAuthenticationService.createSession().then(session => {
-					this.authenticatedSession = session;
-
-					this.hide();
-					this.show();
-				});
-			}));
+			this._register(loginButton.onDidClick(() => this.handleLogin()));
 		}
 	}
 

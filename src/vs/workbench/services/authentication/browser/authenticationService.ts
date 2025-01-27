@@ -78,6 +78,9 @@ const authenticationExtPoint = ExtensionsRegistry.registerExtensionPoint<Authent
 });
 
 export class AuthenticationService extends Disposable implements IAuthenticationService {
+	private static readonly FIRST_LOGIN_STORAGE_KEY = 'authentication.firstLogin';
+	private firstLoginCompleted: boolean;
+
 	declare readonly _serviceBrand: undefined;
 
 	private _onDidRegisterAuthenticationProvider: Emitter<AuthenticationProviderInformation> = this._register(new Emitter<AuthenticationProviderInformation>());
@@ -99,7 +102,8 @@ export class AuthenticationService extends Disposable implements IAuthentication
 		@IExtensionService private readonly _extensionService: IExtensionService,
 		@IAuthenticationAccessService authenticationAccessService: IAuthenticationAccessService,
 		@IBrowserWorkbenchEnvironmentService private readonly _environmentService: IBrowserWorkbenchEnvironmentService,
-		@ILogService private readonly _logService: ILogService
+		@ILogService private readonly _logService: ILogService,
+		@IStorageService private readonly _storageService: IStorageService
 	) {
 		super();
 
@@ -107,14 +111,20 @@ export class AuthenticationService extends Disposable implements IAuthentication
 
 		this._register(this.onDidChangeSessions(e => {
 			if (e.event.added.length > 0 && !this.firstLoginCompleted) {
-				this._logService.info('[auth] First login detected, refreshing window');
+				this._logService.info('[auth] First login detected');
 				try {
 					this.firstLoginCompleted = true;
 					this._storageService.store(AuthenticationService.FIRST_LOGIN_STORAGE_KEY, true, StorageScope.APPLICATION, StorageTarget.MACHINE);
-					// Use timeout to ensure window is fully loaded before refresh
-					setTimeout(() => {
-						mainWindow.location.reload();
-					}, 1000);
+					// Fire event to notify listeners about the first login
+					this._onDidChangeSessions.fire({
+						providerId: e.providerId,
+						label: e.label,
+						event: {
+							added: e.event.added,
+							changed: [],
+							removed: []
+						}
+					});
 				} catch (error) {
 					this._logService.error('[auth] Failed to handle first login:', error);
 				}

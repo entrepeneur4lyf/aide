@@ -90,22 +90,27 @@ export class CSAuthenticationService extends Themable implements ICSAuthenticati
 					'refresh_token': this._session.refreshToken,
 				}),
 			});
+			
 			if (!response.ok) {
-				this.notificationService.notify(
-					{
-						severity: Severity.Error,
-						message: `Failed to authenticate with CodeStory. Please try logging in again.`,
-						priority: NotificationPriority.URGENT,
-					}
-				);
 				await this.deleteSession();
-				throw new Error(`Failed to authenticate with CodeStory. Please try logging in again.`);
+				this._session = undefined;
+				this._onDidAuthenticate.fire(undefined);
+				this.notificationService.notify({
+					severity: Severity.Error,
+					message: `Failed to authenticate with CodeStory. Please try logging in again.`,
+					priority: NotificationPriority.URGENT,
+				});
+				return;
 			}
 
 			const data = (await response.json()) as EncodedCSTokenData;
-			await this.getSessionData(this._session.id, data);
+			const session = await this.getSessionData(this._session.id, data);
+			this._session = session;
+			this._onDidAuthenticate.fire(session);
 		} catch (e: any) {
-			return;
+			await this.deleteSession();
+			this._session = undefined;
+			this._onDidAuthenticate.fire(undefined);
 		}
 	}
 
