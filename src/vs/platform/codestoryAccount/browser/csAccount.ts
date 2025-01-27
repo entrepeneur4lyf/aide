@@ -176,6 +176,12 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			const loginDescription = dom.append(this.csAccountCard, $('.login-description'));
 			loginDescription.textContent = 'To get access to AI features';
 
+			// Add account link
+			const accountLink = dom.append(this.csAccountCard, $('a.account-link'));
+			accountLink.href = `${this._websiteBase}/account`;
+			accountLink.textContent = 'Visit Account Page';
+			accountLink.target = '_blank';
+
 			const loginButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			loginButton.label = 'Log In...';
 			this._register(loginButton.onDidClick(() => {

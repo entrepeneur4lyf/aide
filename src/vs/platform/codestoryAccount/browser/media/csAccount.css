@@ -50,3 +50,16 @@
 	font-weight: bold;
 	font-size: 14px;
 }
+
+.monaco-workbench .cs-account-card > .account-link {
+	display: block;
+	text-align: center;
+	margin-top: 8px;
+	color: var(--vscode-textLink-foreground);
+	text-decoration: none;
+	font-size: 12px;
+}
+
+.monaco-workbench .cs-account-card > .account-link:hover {
+	text-decoration: underline;
+}
