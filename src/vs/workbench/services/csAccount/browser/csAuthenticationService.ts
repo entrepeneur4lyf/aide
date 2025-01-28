@@ -30,15 +30,22 @@ class CSAuthenticationError extends Error {
 const SESSION_SECRET_KEY = 'codestory.auth.session';
 
 export class CSAuthenticationService extends Themable implements ICSAuthenticationService {
+	/** Service brand for DI */
 	declare readonly _serviceBrand: undefined;
 
+	/** Event emitter for successful authentication */
 	private _onDidAuthenticate: Emitter<CSAuthenticationSession> = this._register(new Emitter<CSAuthenticationSession>());
+	/** Event that fires when authentication is successful */
 	readonly onDidAuthenticate: Event<CSAuthenticationSession> = this._onDidAuthenticate.event;
 
+	/** Base URL for subscription-related API endpoints */
 	private _subscriptionsAPIBase: string | null = null;
+	/** Base URL for the CodeStory website */
 	private _websiteBase: string | null = null;
 
+	/** List of pending authentication state IDs for OAuth flow */
 	private _pendingStates: string[] = [];
+	/** Current authentication session data */
 	private _session: CSAuthenticationSession | undefined;
 
 	constructor(

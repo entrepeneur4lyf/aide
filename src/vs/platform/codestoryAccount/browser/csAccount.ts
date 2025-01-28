@@ -24,15 +24,32 @@ const $ = dom.$;
 const STORAGE_KEY = 'csAccount.requestCount';
 
 export class CSAccountService extends Disposable implements ICSAccountService {
+	/** Service brand for DI identification */
 	_serviceBrand: undefined;
 
+	/** Stores the current authenticated session information */
 	private authenticatedSession: CSAuthenticationSession | undefined;
 
+	/** Context key to track the visibility state of the account card */
 	private isVisible: IContextKey<boolean>;
+	
+	/** Reference to the account card DOM element */
 	private csAccountCard: HTMLElement | undefined;
 
+	/** Base URL for the CodeStory website - changes based on environment */
 	private _websiteBase: string | null = null;
 
+	/**
+	 * Creates a new instance of the CSAccountService
+	 * @param contextKeyService - Service for managing context keys
+	 * @param csAuthenticationService - Service for handling authentication
+	 * @param environmentService - Service for environment information
+	 * @param instantiationService - Service for instantiating components
+	 * @param layoutService - Service for managing UI layout
+	 * @param notificationService - Service for showing notifications
+	 * @param storageService - Service for persistent storage
+	 * @param openerService - Service for opening external URLs
+	 */
 	constructor(
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,
 		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
@@ -65,6 +82,11 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 	}
 
+	/**
+	 * Toggles the visibility of the account card
+	 * If the card is hidden, shows it and sets visibility context key to true
+	 * If the card is visible, hides it and sets visibility context key to false
+	 */
 	toggle(): void {
 		if (!this.isVisible.get()) {
 			this.show();
