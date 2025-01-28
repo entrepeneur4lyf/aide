@@ -1,4 +1,4 @@
-/*---------------------------------------------------------------------------------------------
+/*
  *  Copyright (c) Microsoft Corporation. All rights reserved.
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
@@ -21,84 +21,96 @@ import { CS_ACCOUNT_CARD_VISIBLE } from '../common/csAccountContextKeys.js';
 import './media/csAccount.css';
 
 const $ = dom.$;
+// Key used to store the number of times the account card has been shown
 const STORAGE_KEY = 'csAccount.requestCount';
 
+/**
+ * Implementation of the CodeStory Account Service for browser environments.
+ * Handles user authentication, account UI visibility, and session management.
+ */
 export class CSAccountService extends Disposable implements ICSAccountService {
-	_serviceBrand: undefined;
+    _serviceBrand: undefined;
 
-	private authenticatedSession: CSAuthenticationSession | undefined;
+    // Current authenticated session state
+    private authenticatedSession: CSAuthenticationSession | undefined;
 
-	private isVisible: IContextKey<boolean>;
-	private csAccountCard: HTMLElement | undefined;
+    // Context key to track account card visibility
+    private isVisible: IContextKey<boolean>;
+    private csAccountCard: HTMLElement | undefined;
 
-	private _websiteBase: string | null = null;
+    // Base URL for CodeStory website, varies based on environment
+    private _websiteBase: string | null = null;
 
-	constructor(
-		@IContextKeyService private readonly contextKeyService: IContextKeyService,
-		@ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
-		@IEnvironmentService private readonly environmentService: IEnvironmentService,
-		@IInstantiationService private readonly instantiationService: IInstantiationService,
-		@ILayoutService private readonly layoutService: ILayoutService,
-		@INotificationService private readonly notificationService: INotificationService,
-		@IStorageService private readonly storageService: IStorageService,
-		@IOpenerService private readonly openerService: IOpenerService
-	) {
-		super();
+    constructor(
+        @IContextKeyService private readonly contextKeyService: IContextKeyService,
+        @ICSAuthenticationService private readonly csAuthenticationService: ICSAuthenticationService,
+        @IEnvironmentService private readonly environmentService: IEnvironmentService,
+        @IInstantiationService private readonly instantiationService: IInstantiationService,
+        @ILayoutService private readonly layoutService: ILayoutService,
+        @INotificationService private readonly notificationService: INotificationService,
+        @IStorageService private readonly storageService: IStorageService,
+        @IOpenerService private readonly openerService: IOpenerService
+    ) {
+        super();
 
-		const isDevelopment = !this.environmentService.isBuilt || this.environmentService.isExtensionDevelopment;
-		if (isDevelopment) {
-			this._websiteBase = 'https://staging.aide.dev';
-		} else {
-			this._websiteBase = 'https://aide.dev';
-		}
+        // Set website base URL based on environment (development vs production)
+        const isDevelopment = !this.environmentService.isBuilt || this.environmentService.isExtensionDevelopment;
+        this._websiteBase = isDevelopment ? 'https://staging.aide.dev' : 'https://aide.dev';
 
-		this.isVisible = CS_ACCOUNT_CARD_VISIBLE.bindTo(this.contextKeyService);
-		this.refresh();
-	}
+        // Initialize visibility context and refresh session state
+        this.isVisible = CS_ACCOUNT_CARD_VISIBLE.bindTo(this.contextKeyService);
+        this.refresh();
+    }
 
-	private async refresh(): Promise<void> {
-		const session = await this.csAuthenticationService.getSession();
-		if (session) {
-			this.authenticatedSession = session;
-		} else {
-			this.authenticatedSession = undefined;
-		}
-	}
+    /**
+     * Refreshes the current authentication session state
+     */
+    private async refresh(): Promise<void> {
+        const session = await this.csAuthenticationService.getSession();
+        this.authenticatedSession = session || undefined;
+    }
 
-	toggle(): void {
-		if (!this.isVisible.get()) {
-			this.show();
-			this.isVisible.set(true);
-		} else {
-			this.hide();
-			this.isVisible.set(false);
-		}
-	}
+    /**
+     * Toggles the visibility of the account card UI
+     */
+    toggle(): void {
+        if (!this.isVisible.get()) {
+            this.show();
+            this.isVisible.set(true);
+        } else {
+            this.hide();
+            this.isVisible.set(false);
+        }
+    }
 
-	async ensureAuthorized(): Promise<boolean> {
-		const count = this.storageService.getNumber(STORAGE_KEY, StorageScope.PROFILE, 0);
-		try {
-			let csAuthSession = await this.csAuthenticationService.getSession();
-			if (!csAuthSession) {
-				// Show the account card
-				this.toggle();
-				// Wait for the user to authenticate
-				csAuthSession = await new Promise<CSAuthenticationSession>((resolve, reject) => {
-					const disposable = this.csAuthenticationService.onDidAuthenticate(session => {
-						if (session) {
-							resolve(session);
-						} else {
-							reject(new Error('Authentication failed'));
-						}
-						disposable.dispose();
-					});
-				});
-			}
+    /**
+     * Ensures the user is authorized and has valid subscription access.
+     * Shows the account card if authentication is needed.
+     * @returns Promise<boolean> indicating if authorization was successful
+     */
+    async ensureAuthorized(): Promise<boolean> {
+        const count = this.storageService.getNumber(STORAGE_KEY, StorageScope.PROFILE, 0);
+        try {
+            let csAuthSession = await this.csAuthenticationService.getSession();
+            if (!csAuthSession) {
+                // Show the account card and wait for authentication
+                this.toggle();
+                csAuthSession = await new Promise<CSAuthenticationSession>((resolve, reject) => {
+                    const disposable = this.csAuthenticationService.onDidAuthenticate(session => {
+                        if (session) {
+                            resolve(session);
+                        } else {
+                            reject(new Error('Authentication failed'));
+                        }
+                        disposable.dispose();
+                    });
+                });
+            }
 
-			// Check if the user has a valid subscription
-			const subscription = csAuthSession.subscription;
-			if (statusAllowsAccess(subscription.status)) {
-				this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
+            // Verify subscription status and update request count
+            const subscription = csAuthSession.subscription;
+            if (statusAllowsAccess(subscription.status)) {
+                this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
 				return true;
 			} else {
 				this.notificationService.prompt(
@@ -130,68 +142,79 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 	}
 
-	private async show(): Promise<void> {
-		const container = this.layoutService.activeContainer;
-		const csAccountCard = this.csAccountCard = dom.append(container, $('.cs-account-card'));
-		if (!this.authenticatedSession) {
-			await this.refresh();
-		}
+    /**
+     * Displays the account card UI with either login prompt or user profile
+     * based on authentication status
+     */
+    private async show(): Promise<void> {
+        const container = this.layoutService.activeContainer;
+        const csAccountCard = this.csAccountCard = dom.append(container, $('.cs-account-card'));
+        if (!this.authenticatedSession) {
+            await this.refresh();
+        }
 
-		if (this.authenticatedSession) {
-			// User is signed in
-			const user = this.authenticatedSession.account;
-			const profileRow = dom.append(this.csAccountCard, $('.profile-row'));
-			if (user.profile_picture_url) {
-				const profilePicture = dom.append(profileRow, $<HTMLImageElement>('img.profile-picture'));
-				profilePicture.src = user.profile_picture_url;
-			} else {
-				const profilePicture = dom.append(profileRow, $('.profile-picture'));
-				profilePicture.classList.add(...ThemeIcon.asClassNameArray(Codicon.account));
-			}
+        if (this.authenticatedSession) {
+            // Display authenticated user's profile information
+            const user = this.authenticatedSession.account;
+            const profileRow = dom.append(this.csAccountCard, $('.profile-row'));
+            
+            // Add profile picture or default icon
+            if (user.profile_picture_url) {
+                const profilePicture = dom.append(profileRow, $<HTMLImageElement>('img.profile-picture'));
+                profilePicture.src = user.profile_picture_url;
+            } else {
+                const profilePicture = dom.append(profileRow, $('.profile-picture'));
+                profilePicture.classList.add(...ThemeIcon.asClassNameArray(Codicon.account));
+            }
 
-			const userDetails = dom.append(profileRow, $('.user-details'));
-			const name = dom.append(userDetails, $('.name'));
-			const email = dom.append(userDetails, $('.email'));
-			name.textContent = user.first_name + ' ' + user.last_name;
-			email.textContent = user.email;
+            // Add user details (name and email)
+            const userDetails = dom.append(profileRow, $('.user-details'));
+            const name = dom.append(userDetails, $('.name'));
+            const email = dom.append(userDetails, $('.email'));
+            name.textContent = user.first_name + ' ' + user.last_name;
+            email.textContent = user.email;
 
-			const logoutButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
-			logoutButton.label = 'Log Out';
-			this._register(logoutButton.onDidClick(() => {
-				if (!this.authenticatedSession) {
-					return;
-				}
+            // Add logout button
+            const logoutButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
+            logoutButton.label = 'Log Out';
+            this._register(logoutButton.onDidClick(() => {
+                if (!this.authenticatedSession) {
+                    return;
+                }
 
-				this.csAuthenticationService.deleteSession(this.authenticatedSession.id).then(() => {
-					this.authenticatedSession = undefined;
+                // Handle logout by deleting session and refreshing UI
+                this.csAuthenticationService.deleteSession(this.authenticatedSession.id).then(() => {
+                    this.authenticatedSession = undefined;
+                    this.hide();
+                    this.show();
+                });
+            }));
+        } else {
+            // Display login prompt for unauthenticated users
+            const loginPrompt = dom.append(this.csAccountCard, $('.login-prompt'));
+            loginPrompt.textContent = 'Log in to CodeStory Account';
+            const loginDescription = dom.append(this.csAccountCard, $('.login-description'));
+            loginDescription.textContent = 'To get access to AI features';
 
-					this.hide();
-					this.show();
-				});
-			}));
-		} else {
-			// User is not signed in
-			const loginPrompt = dom.append(this.csAccountCard, $('.login-prompt'));
-			loginPrompt.textContent = 'Log in to CodeStory Account';
-			const loginDescription = dom.append(this.csAccountCard, $('.login-description'));
-			loginDescription.textContent = 'To get access to AI features';
+            // Add login button
+            const loginButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
+            loginButton.label = 'Log In...';
+            this._register(loginButton.onDidClick(() => {
+                this.csAuthenticationService.createSession().then(session => {
+                    this.authenticatedSession = session;
+                    this.hide();
+                    this.show();
+                });
+            }));
+        }
+    }
 
-			const loginButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
-			loginButton.label = 'Log In...';
-			this._register(loginButton.onDidClick(() => {
-				this.csAuthenticationService.createSession().then(session => {
-					this.authenticatedSession = session;
-
-					this.hide();
-					this.show();
-				});
-			}));
-		}
-	}
-
-	private hide(): void {
-		if (this.csAccountCard) {
-			this.csAccountCard.remove();
-		}
-	}
+    /**
+     * Removes the account card UI from the DOM
+     */
+    private hide(): void {
+        if (this.csAccountCard) {
+            this.csAccountCard.remove();
+        }
+    }
 }
