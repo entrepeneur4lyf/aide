@@ -549,6 +549,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 
+				if (event.event.ContextWindowWarning) {
+					responseStream.stream.warning({
+						message: event.event.ContextWindowWarning.message
+					});
+					continue;
+				}
+
 				if (event.event.Error) {
 					const stream = latestResponseStream ?? await this.createNewResponseStream(event.request_id);
 					if (stream) {
