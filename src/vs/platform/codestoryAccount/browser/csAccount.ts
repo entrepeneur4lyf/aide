@@ -20,17 +20,28 @@ import { CSAuthenticationSession, ICSAccountService, ICSAuthenticationService, s
 import { CS_ACCOUNT_CARD_VISIBLE } from '../common/csAccountContextKeys.js';
 import './media/csAccount.css';
 
+// Helper for DOM manipulation
 const $ = dom.$;
+// Storage key for tracking the number of requests made by the user
 const STORAGE_KEY = 'csAccount.requestCount';
 
+/**
+ * Implementation of the CodeStory Account Service for browser environments.
+ * Handles authentication UI, session management, and authorization checks.
+ * Provides functionality for showing/hiding account card and managing user sessions.
+ */
 export class CSAccountService extends Disposable implements ICSAccountService {
 	_serviceBrand: undefined;
 
+	// Holds the current authenticated session data if user is logged in
 	private authenticatedSession: CSAuthenticationSession | undefined;
 
+	// Context key to track if the account card UI is visible
 	private isVisible: IContextKey<boolean>;
+	// Reference to the account card DOM element
 	private csAccountCard: HTMLElement | undefined;
 
+	// Base URL for the CodeStory website, changes based on environment
 	private _websiteBase: string | null = null;
 
 	constructor(
@@ -45,6 +56,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 	) {
 		super();
 
+		// Determine whether to use staging or production URL based on environment
 		const isDevelopment = !this.environmentService.isBuilt || this.environmentService.isExtensionDevelopment;
 		if (isDevelopment) {
 			this._websiteBase = 'https://staging.aide.dev';
@@ -52,10 +64,15 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			this._websiteBase = 'https://aide.dev';
 		}
 
+		// Initialize visibility context key and refresh the session
 		this.isVisible = CS_ACCOUNT_CARD_VISIBLE.bindTo(this.contextKeyService);
 		this.refresh();
 	}
 
+	/**
+	 * Refreshes the authentication session from the authentication service.
+	 * Updates the local session state based on the authentication service.
+	 */
 	private async refresh(): Promise<void> {
 		const session = await this.csAuthenticationService.getSession();
 		if (session) {
@@ -65,6 +82,11 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 	}
 
+	/**
+	 * Toggles the visibility of the account UI card.
+	 * If currently hidden, shows it; if visible, hides it.
+	 * Updates the context key accordingly.
+	 */
 	toggle(): void {
 		if (!this.isVisible.get()) {
 			this.show();
@@ -75,14 +97,20 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 	}
 
+	/**
+	 * Ensures the user is authorized to use CodeStory features.
+	 * Shows the account card if not authenticated, and checks subscription status.
+	 * Tracks usage through storage service.
+	 * @returns Promise<boolean> indicating if the user is authorized
+	 */
 	async ensureAuthorized(): Promise<boolean> {
 		const count = this.storageService.getNumber(STORAGE_KEY, StorageScope.PROFILE, 0);
 		try {
 			let csAuthSession = await this.csAuthenticationService.getSession();
 			if (!csAuthSession) {
-				// Show the account card
+				// Show the account card if no session exists
 				this.toggle();
-				// Wait for the user to authenticate
+				// Wait for the user to authenticate through a Promise
 				csAuthSession = await new Promise<CSAuthenticationSession>((resolve, reject) => {
 					const disposable = this.csAuthenticationService.onDidAuthenticate(session => {
 						if (session) {
@@ -101,6 +129,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 				this.storageService.store(STORAGE_KEY, count + 1, StorageScope.PROFILE, StorageTarget.MACHINE);
 				return true;
 			} else {
+				// Show error notification with actions if subscription is invalid
 				this.notificationService.prompt(
 					Severity.Error,
 					'You need a valid subscription to continue using Aide. Please visit the account page to update your subscription.',
@@ -120,7 +149,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 						}
 					]
 				);
-				return false; // User is not on the trial period
+				return false; // User does not have valid subscription
 			}
 		} catch (error) {
 			// Handle any errors that occurred during the authentication
@@ -130,6 +159,11 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 	}
 
+	/**
+	 * Shows the account UI card with either sign-in options or user profile.
+	 * Displays user info if authenticated, or login prompt if not.
+	 * Creates and manages the account card DOM elements.
+	 */
 	private async show(): Promise<void> {
 		const container = this.layoutService.activeContainer;
 		const csAccountCard = this.csAccountCard = dom.append(container, $('.cs-account-card'));
@@ -138,7 +172,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 
 		if (this.authenticatedSession) {
-			// User is signed in
+			// User is signed in - show profile information and logout button
 			const user = this.authenticatedSession.account;
 			const profileRow = dom.append(this.csAccountCard, $('.profile-row'));
 			if (user.profile_picture_url) {
@@ -155,6 +189,7 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 			name.textContent = user.first_name + ' ' + user.last_name;
 			email.textContent = user.email;
 
+			// Add logout button with click handler
 			const logoutButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			logoutButton.label = 'Log Out';
 			this._register(logoutButton.onDidClick(() => {
@@ -170,12 +205,13 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 				});
 			}));
 		} else {
-			// User is not signed in
+			// User is not signed in - show login prompt and button
 			const loginPrompt = dom.append(this.csAccountCard, $('.login-prompt'));
 			loginPrompt.textContent = 'Log in to CodeStory Account';
 			const loginDescription = dom.append(this.csAccountCard, $('.login-description'));
 			loginDescription.textContent = 'To get access to AI features';
 
+			// Add login button with click handler
 			const loginButton = this._register(this.instantiationService.createInstance(Button, csAccountCard, defaultButtonStyles));
 			loginButton.label = 'Log In...';
 			this._register(loginButton.onDidClick(() => {
@@ -189,6 +225,9 @@ export class CSAccountService extends Disposable implements ICSAccountService {
 		}
 	}
 
+	/**
+	 * Hides the account UI card by removing it from the DOM.
+	 */
 	private hide(): void {
 		if (this.csAccountCard) {
 			this.csAccountCard.remove();
