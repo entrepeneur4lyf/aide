@@ -267,6 +267,9 @@ export class WorkingCopyService extends Disposable implements IWorkingCopyServic
 		return false;
 	}
 
+	/**
+	 * Gets the total count of dirty working copies.
+	 */
 	get dirtyCount(): number {
 		let totalDirtyCount = 0;
 
@@ -279,10 +282,17 @@ export class WorkingCopyService extends Disposable implements IWorkingCopyServic
 		return totalDirtyCount;
 	}
 
+	/**
+	 * Gets all dirty working copies.
+	 */
 	get dirtyWorkingCopies(): IWorkingCopy[] {
 		return this.workingCopies.filter(workingCopy => workingCopy.isDirty());
 	}
 
+	/**
+	 * Gets the total count of modified working copies, including those that may
+	 * not be dirty (like scratchpads).
+	 */
 	get modifiedCount(): number {
 		let totalModifiedCount = 0;
 
@@ -295,10 +305,18 @@ export class WorkingCopyService extends Disposable implements IWorkingCopyServic
 		return totalModifiedCount;
 	}
 
+	/**
+	 * Gets all modified working copies, including those that may not be dirty.
+	 */
 	get modifiedWorkingCopies(): IWorkingCopy[] {
 		return this.workingCopies.filter(workingCopy => workingCopy.isModified());
 	}
 
+	/**
+	 * Checks if a working copy with the given resource is dirty.
+	 * @param resource The resource to check
+	 * @param typeId Optional type identifier to check only working copies of that type
+	 */
 	isDirty(resource: URI, typeId?: string): boolean {
 		const workingCopies = this.mapResourceToWorkingCopies.get(resource);
 		if (workingCopies) {

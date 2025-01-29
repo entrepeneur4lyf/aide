@@ -158,7 +158,11 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		} as IModelSelectionSettings;
 	}
 
-	/** Validate and filter providers based on their required configurations. */
+	/**
+	 * Validates and filters providers based on their required configurations.
+	 * @param providers The providers to validate
+	 * @returns A record of validated providers
+	 */
 	private validateProviders(providers: Record<string, ProviderConfig>): Record<string, ProviderConfig> {
 		const validated: Record<string, ProviderConfig> = {};
 		for (const [key, provider] of Object.entries(providers)) {
@@ -173,7 +177,12 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		return validated;
 	}
 
-	/** Validate and filter models. Check duplicates and ensure each model references a valid provider. */
+	/**
+	 * Validates and filters models. Checks for duplicates and ensures each model references a valid provider.
+	 * @param models The models to validate
+	 * @param validatedProviders The previously validated providers
+	 * @returns A record of validated models
+	 */
 	private validateModels(
 		models: Record<string, ILanguageModelItem>,
 		validatedProviders: Record<string, ProviderConfig>
@@ -192,7 +201,12 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 		return result;
 	}
 
-	/** Check if a provider key and config is valid for openAI-compatible providers. */
+	/**
+	 * Checks if a provider key and config is valid for openAI-compatible providers.
+	 * @param key The provider key
+	 * @param provider The provider configuration
+	 * @returns A type predicate indicating if the provider is a valid OpenAI compatible provider
+	 */
 	private isValidOpenAICompatibleProvider(key: string, provider: ProviderConfig): provider is OpenAICompatibleProviderConfig {
 		return openAICompatibleProvider.includes(key as typeof openAICompatibleProvider[number])
 			&& typeof (provider as OpenAICompatibleProviderConfig).apiBase === 'string'
@@ -201,19 +215,33 @@ export class AIModelsService extends Disposable implements IAIModelSelectionServ
 			&& (provider as OpenAICompatibleProviderConfig).apiKey.length > 0;
 	}
 
-	/** Check if a provider key and config is valid for apiKey-only providers. */
+	/**
+	 * Checks if a provider key and config is valid for apiKey-only providers.
+	 * @param key The provider key
+	 * @param provider The provider configuration
+	 * @returns A type predicate indicating if the provider is a valid API key only provider
+	 */
 	private isValidApiKeyOnlyProvider(key: string, provider: ProviderConfig): provider is ApiKeyOnlyProviderConfig {
 		return apiKeyOnlyProviders.includes(key as typeof apiKeyOnlyProviders[number])
 			&& typeof (provider as ApiKeyOnlyProviderConfig).apiKey === 'string'
 			&& (provider as ApiKeyOnlyProviderConfig).apiKey.length > 0;
 	}
 
-	/** Check if a provider requires no configuration. */
+	/**
+	 * Checks if a provider requires no configuration.
+	 * @param key The provider key
+	 * @returns A boolean indicating if the provider needs no configuration
+	 */
 	private isNoConfigurationProvider(key: string): boolean {
 		return noConfigurationProviders.includes(key as typeof noConfigurationProviders[number]);
 	}
 
-	/** Validate a single model against required constraints and ensure its provider is validated. */
+	/**
+	 * Validates a single model against required constraints and ensures its provider is validated.
+	 * @param model The model to validate
+	 * @param validatedProviders The previously validated providers
+	 * @returns A boolean indicating if the model is valid
+	 */
 	private isValidModel(model: ILanguageModelItem, validatedProviders: Record<string, ProviderConfig>): boolean {
 		// Basic checks
 		const baseChecks = model.name.length > 0

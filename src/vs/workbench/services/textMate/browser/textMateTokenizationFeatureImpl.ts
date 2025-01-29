@@ -496,6 +496,10 @@ function validateGrammarExtensionPoint(extensionLocation: URI, syntax: ITMSyntax
 	return true;
 }
 
+/**
+ * Creates an observable for a configuration value.
+ * Updates when the configuration changes for the specified language.
+ */
 function observableConfigValue<T>(key: string, languageId: string, defaultValue: T, configurationService: IConfigurationService): IObservable<T> {
 	return observableFromEvent(
 		(handleChange) => configurationService.onDidChangeConfiguration(e => {

@@ -63,21 +63,21 @@ export interface IAuthenticationService {
 	readonly _serviceBrand: undefined;
 
 	/**
-	 * Fires when an authentication provider has been registered
+	 * Fires when an authentication provider has been registered.
 	 */
 	readonly onDidRegisterAuthenticationProvider: Event<AuthenticationProviderInformation>;
 	/**
-	 * Fires when an authentication provider has been unregistered
+	 * Fires when an authentication provider has been unregistered.
 	 */
 	readonly onDidUnregisterAuthenticationProvider: Event<AuthenticationProviderInformation>;
 
 	/**
-	 * Fires when the list of sessions for a provider has been added, removed or changed
+	 * Fires when the list of sessions for a provider has been added, removed or changed.
 	 */
 	readonly onDidChangeSessions: Event<{ providerId: string; label: string; event: AuthenticationSessionsChangeEvent }>;
 
 	/**
-	 * Fires when the list of declaredProviders has changed
+	 * Fires when the list of declaredProviders has changed.
 	 */
 	readonly onDidChangeDeclaredProviders: Event<void>;
 
@@ -87,38 +87,40 @@ export interface IAuthenticationService {
 	readonly declaredProviders: AuthenticationProviderInformation[];
 
 	/**
-	 * Registers that an extension has declared an authentication provider in their package.json
+	 * Registers that an extension has declared an authentication provider in their package.json.
 	 * @param provider The provider information to register
 	 */
 	registerDeclaredAuthenticationProvider(provider: AuthenticationProviderInformation): void;
 
 	/**
-	 * Unregisters a declared authentication provider
+	 * Unregisters a declared authentication provider.
 	 * @param id The id of the provider to unregister
 	 */
 	unregisterDeclaredAuthenticationProvider(id: string): void;
 
 	/**
-	 * Checks if an authentication provider has been registered
+	 * Checks if an authentication provider has been registered.
 	 * @param id The id of the provider to check
+	 * @returns True if the provider is registered, false otherwise
 	 */
 	isAuthenticationProviderRegistered(id: string): boolean;
 
 	/**
-	 * Registers an authentication provider
+	 * Registers an authentication provider implementation.
 	 * @param id The id of the provider
 	 * @param provider The implementation of the provider
 	 */
 	registerAuthenticationProvider(id: string, provider: IAuthenticationProvider): void;
 
 	/**
-	 * Unregisters an authentication provider
+	 * Unregisters an authentication provider.
 	 * @param id The id of the provider to unregister
 	 */
 	unregisterAuthenticationProvider(id: string): void;
 
 	/**
-	 * Gets the provider ids of all registered authentication providers
+	 * Gets the provider ids of all registered authentication providers.
+	 * @returns An array of provider ids
 	 */
 	getProviderIds(): string[];
 
@@ -126,21 +128,24 @@ export interface IAuthenticationService {
 	 * Gets the provider with the given id.
 	 * @param id The id of the provider to get
 	 * @throws if the provider is not registered
+	 * @returns The authentication provider
 	 */
 	getProvider(id: string): IAuthenticationProvider;
 
 	/**
-	 * Gets all accounts that are currently logged in across all sessions
+	 * Gets all accounts that are currently logged in across all sessions.
 	 * @param id The id of the provider to ask for accounts
 	 * @returns A promise that resolves to an array of accounts
 	 */
 	getAccounts(id: string): Promise<ReadonlyArray<AuthenticationSessionAccount>>;
 
 	/**
-	 * Gets all sessions that satisfy the given scopes from the provider with the given id
+	 * Gets all sessions that satisfy the given scopes from the provider with the given id.
 	 * @param id The id of the provider to ask for a session
 	 * @param scopes The scopes for the session
+	 * @param account Optional account to get sessions for
 	 * @param activateImmediate If true, the provider should activate immediately if it is not already
+	 * @returns A promise that resolves to an array of authentication sessions
 	 */
 	getSessions(id: string, scopes?: string[], account?: AuthenticationSessionAccount, activateImmediate?: boolean): Promise<ReadonlyArray<AuthenticationSession>>;
 

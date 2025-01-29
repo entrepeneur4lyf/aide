@@ -134,18 +134,39 @@ export class ActivityService extends Disposable implements IActivityService {
 		});
 	}
 
+	/**
+	 * Shows an activity indicator in the accounts menu.
+	 * @param activity The activity to show
+	 * @returns A disposable to remove the activity
+	 */
 	showAccountsActivity(activity: IActivity): IDisposable {
 		return this.showActivity(ACCOUNTS_ACTIVITY_ID, activity);
 	}
 
+	/**
+	 * Shows a global activity indicator.
+	 * @param activity The activity to show
+	 * @returns A disposable to remove the activity
+	 */
 	showGlobalActivity(activity: IActivity): IDisposable {
 		return this.showActivity(GLOBAL_ACTIVITY_ID, activity);
 	}
 
+	/**
+	 * Gets all activities for a specific ID.
+	 * @param id The activity ID
+	 * @returns Array of activities
+	 */
 	getActivity(id: string): IActivity[] {
 		return this.globalActivities.get(id) ?? [];
 	}
 
+	/**
+	 * Internal method to show an activity for a specific ID.
+	 * @param id The activity ID
+	 * @param activity The activity to show
+	 * @returns A disposable to remove the activity
+	 */
 	private showActivity(id: string, activity: IActivity): IDisposable {
 		let activities = this.globalActivities.get(id);
 		if (!activities) {
