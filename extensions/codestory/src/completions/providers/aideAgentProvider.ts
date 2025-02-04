@@ -531,6 +531,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 
 		try {
 			let streamStarted = false;
+			let isRestoredSession = false;
 
 			for await (const event of asyncIterable) {
 				// print debug events if we are in dev mode
@@ -543,11 +544,17 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				}
 
 				if ('session_id' in event && 'started' in event) {
+					// Check if this is a restored session
+					isRestoredSession = event.session_id === sessionId && !event.started;
 					if (!event.started) {
 						streamStarted = false;
 						throw new SidecarConnectionFailedError();
 					}
+					continue;
+				}
 
+				// Skip initial exchange for restored sessions
+				if (isRestoredSession && !streamStarted) {
 					continue;
 				}
 
