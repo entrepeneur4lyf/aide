@@ -19,6 +19,8 @@ import { IBrowserWorkbenchEnvironmentService } from '../../../services/environme
 import { ReleaseNotesManager } from './releaseNotesEditor.js';
 import { isMacintosh, isWeb, isWindows } from '../../../../base/common/platform.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
+import { ThemeColor } from '../../../../platform/theme/common/themeService.js';
+import { STATUS_BAR_ERROR_ITEM_BACKGROUND, STATUS_BAR_WARNING_ITEM_BACKGROUND } from '../../../common/theme.js';
 import { RawContextKey, IContextKey, IContextKeyService, ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
 import { MenuRegistry, MenuId, registerAction2, Action2 } from '../../../../platform/actions/common/actions.js';
 import { CommandsRegistry } from '../../../../platform/commands/common/commands.js';
@@ -221,20 +223,39 @@ export class UpdateContribution extends Disposable implements IWorkbenchContribu
 		this.statusBarEntryDisposable.clear();
 
 		if (state.type === StateType.AvailableForDownload || state.type === StateType.Downloaded || state.type === StateType.Ready) {
-			const text = state.type === StateType.Ready ? `$(sync~spin) Update Ready` : `$(cloud-download) Update Available`;
+			const text = state.type === StateType.Ready ? `$(sync~spin) Ready to Update` : 
+				state.type === StateType.Downloaded ? `$(cloud-download) Update Downloaded` : 
+				`$(cloud-download) Update Available`;
+			
+			const tooltip = state.type === StateType.Ready ? 
+				nls.localize('status.updateReadyTooltip', "A new update for {0} is ready to install. Click to restart and install.", this.productService.nameLong) :
+				state.type === StateType.Downloaded ? 
+				nls.localize('status.updateDownloadedTooltip', "A new update for {0} has been downloaded. Click to install.", this.productService.nameLong) :
+				nls.localize('status.updateAvailableTooltip', "A new update for {0} is available. Click to download.", this.productService.nameLong);
+
+			const backgroundColor = state.type === StateType.Ready ? 
+				new ThemeColor(STATUS_BAR_ERROR_ITEM_BACKGROUND) :
+				state.type === StateType.Downloaded ?
+				new ThemeColor(STATUS_BAR_WARNING_ITEM_BACKGROUND) :
+				undefined;
+
 			this.statusBarEntryDisposable.value = this.statusbarService.addEntry(
 				{
 					name: nls.localize('status.updateStatus', "Update Status"),
 					text,
-					tooltip: nls.localize('status.updateTooltip', "A new update for {0} is available", this.productService.nameLong),
+					tooltip,
 					command: 'update.applyUpdate',
-					backgroundColor: new ThemeColor(STATUS_BAR_WARNING_ITEM_BACKGROUND)
+					backgroundColor
 				},
 				'status.update',
 				StatusbarAlignment.LEFT,
 				100
 			);
+		} else if (state.type === StateType.Idle || state.type === StateType.Disabled) {
+			// Clear status bar entry when update is complete or disabled
+			this.statusBarEntryDisposable.clear();
 		}
+
 
 
 		switch (state.type) {
