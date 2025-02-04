@@ -491,16 +491,26 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 		return { actionBar };
 	}
 
+	/**
+	 * Renders action elements for a model selection entry
+	 * Only non-default models get an edit action in their action bar
+	 */
 	renderElement(modelSelectionItemEntry: IModelItemEntry, index: number, templateData: IModelActionsColumnTemplateData, height: number | undefined): void {
+		// Clear existing actions from the action bar
 		templateData.actionBar.clear();
 		const actions: IAction[] = [];
+		// Add edit action only for non-default models
 		if (!checkIfDefaultModel(modelSelectionItemEntry.modelItem.key)) {
 			actions.push(this.createEditAction(modelSelectionItemEntry));
+			// Push actions to the action bar with icon display enabled
 			templateData.actionBar.push(actions, { icon: true });
 		}
 	}
 
 	private createEditAction(modelSelectionItemEntry: IModelItemEntry): IAction {
+		// Create an action for editing model selections
+		// The 'icon' class is required for proper icon rendering in the UI
+		// Combined with ThemeIcon class name to ensure correct styling and theme support
 		return {
 			class: `icon ${ThemeIcon.asClassName(settingsEditIcon)}`,
 			enabled: true,
@@ -813,14 +823,27 @@ class ProviderConfigColumnRenderer implements ITableRenderer<IProviderItemEntry,
 
 	disposeTemplate(templateData: IProviderConfigColumnTemplateData): void { }
 
+	/**
+	 * Returns configuration status message for different provider types
+	 * @param providerType The type of AI model provider
+	 * @returns Object containing status message and completion state
+	 */
 	private getEmptyConfigurationMessage(providerType: ProviderType): { message: string; complete: boolean } {
-		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai' || providerType === 'openai-compatible' || providerType === 'anthropic' || providerType === 'fireworkai' || providerType === 'geminipro' || providerType === 'open-router') {
+		// External providers that require user configuration
+		if (providerType === 'azure-openai' || providerType === 'openai-default' || providerType === 'togetherai' || 
+			providerType === 'openai-compatible' || providerType === 'anthropic' || providerType === 'fireworkai' || 
+			providerType === 'geminipro' || providerType === 'open-router') {
 			return { message: 'Configuration incomplete', complete: false };
-		} else if (providerType === 'ollama') {
+		} 
+		// Local provider with no additional configuration needed
+		else if (providerType === 'ollama') {
 			return { message: 'No configuration required', complete: true };
-		} else if (providerType === 'codestory') {
+		} 
+		// Built-in provider that comes pre-configured
+		else if (providerType === 'codestory') {
 			return { message: 'Pre-packaged with Aide', complete: true };
 		}
+		// Default case for any other provider types
 		return { message: 'No configuration options', complete: true };
 	}
 }
