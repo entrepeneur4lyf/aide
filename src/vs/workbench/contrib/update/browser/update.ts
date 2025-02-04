@@ -19,7 +19,8 @@ import { IBrowserWorkbenchEnvironmentService } from '../../../services/environme
 import { ReleaseNotesManager } from './releaseNotesEditor.js';
 import { isMacintosh, isWeb, isWindows } from '../../../../base/common/platform.js';
 import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
-import { ThemeColor } from '../../../../platform/theme/common/themeService.js';
+import { ThemeColor } from '../../../../base/common/themables.js';
+import { IStatusbarService, StatusbarAlignment } from '../../../services/statusbar/browser/statusbar.js';
 import { STATUS_BAR_ERROR_ITEM_BACKGROUND, STATUS_BAR_WARNING_ITEM_BACKGROUND } from '../../../common/theme.js';
 import { RawContextKey, IContextKey, IContextKeyService, ContextKeyExpr } from '../../../../platform/contextkey/common/contextkey.js';
 import { MenuRegistry, MenuId, registerAction2, Action2 } from '../../../../platform/actions/common/actions.js';
