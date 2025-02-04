@@ -160,6 +160,7 @@ export class UpdateContribution extends Disposable implements IWorkbenchContribu
 
 	private state: UpdateState;
 	private readonly badgeDisposable = this._register(new MutableDisposable());
+	private readonly statusBarEntryDisposable = this._register(new MutableDisposable());
 	private updateStateContextKey: IContextKey<string>;
 	private majorMinorUpdateAvailableContextKey: IContextKey<boolean>;
 
@@ -174,7 +175,8 @@ export class UpdateContribution extends Disposable implements IWorkbenchContribu
 		@IProductService private readonly productService: IProductService,
 		@IOpenerService private readonly openerService: IOpenerService,
 		@IConfigurationService private readonly configurationService: IConfigurationService,
-		@IHostService private readonly hostService: IHostService
+		@IHostService private readonly hostService: IHostService,
+		@IStatusbarService private readonly statusbarService: IStatusbarService
 	) {
 		super();
 		this.state = updateService.state;
@@ -202,10 +204,38 @@ export class UpdateContribution extends Disposable implements IWorkbenchContribu
 		}
 
 		this.registerGlobalActivityActions();
+
+		CommandsRegistry.registerCommand('update.applyUpdate', () => {
+			if (this.state.type === StateType.Ready) {
+				this.updateService.quitAndInstall();
+			} else if (this.state.type === StateType.Downloaded) {
+				this.updateService.applyUpdate();
+			} else if (this.state.type === StateType.AvailableForDownload) {
+				this.updateService.downloadUpdate();
+			}
+		});
 	}
 
 	private async onUpdateStateChange(state: UpdateState): Promise<void> {
 		this.updateStateContextKey.set(state.type);
+		this.statusBarEntryDisposable.clear();
+
+		if (state.type === StateType.AvailableForDownload || state.type === StateType.Downloaded || state.type === StateType.Ready) {
+			const text = state.type === StateType.Ready ? `$(sync~spin) Update Ready` : `$(cloud-download) Update Available`;
+			this.statusBarEntryDisposable.value = this.statusbarService.addEntry(
+				{
+					name: nls.localize('status.updateStatus', "Update Status"),
+					text,
+					tooltip: nls.localize('status.updateTooltip', "A new update for {0} is available", this.productService.nameLong),
+					command: 'update.applyUpdate',
+					backgroundColor: new ThemeColor(STATUS_BAR_WARNING_ITEM_BACKGROUND)
+				},
+				'status.update',
+				StatusbarAlignment.LEFT,
+				100
+			);
+		}
+
 
 		switch (state.type) {
 			case StateType.Disabled:
