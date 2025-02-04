@@ -521,7 +521,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	 * interested in, so we want to close the stream when we want to
 	 */
 	async reportAgentEventsToChat(
-		sessionId: string,
+		incomingSessionId: string,
 		stream: AsyncIterableIterator<SideCarAgentEvent>,
 		errorCallback?: () => void,
 	): Promise<void> {
@@ -546,14 +546,15 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 
+				// Handle session start/restore events
 				if ('session_id' in event && 'started' in event) {
-					// Detect restored sessions by checking if the session ID matches but hasn't started
-					// This happens when reconnecting to an existing session
-					isRestoredSession = event.session_id === sessionId && !event.started;
 					if (!event.started) {
 						streamStarted = false;
 						throw new SidecarConnectionFailedError();
 					}
+					// Detect restored sessions by checking if the session ID matches but hasn't started
+					// This happens when reconnecting to an existing session
+					isRestoredSession = event.session_id === incomingSessionId;
 					continue;
 				}
 
@@ -903,7 +904,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 				throw new SidecarConnectionFailedError();
 			}
 		} catch (error) {
-			const responseStream = this.responseStreamCollection.latestResponseStream ?? await this.createNewResponseStream(sessionId);
+			const responseStream = this.responseStreamCollection.latestResponseStream ?? await this.createNewResponseStream(incomingSessionId);
 			if (!responseStream) {
 				throw error;
 			}
@@ -917,7 +918,7 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 			// Clean up any open streams
 			const openStreams = this.responseStreamCollection.getAllResponseStreams();
 			for (const stream of openStreams) {
-				this.closeAndRemoveResponseStream(sessionId, stream.exchangeId);
+				this.closeAndRemoveResponseStream(incomingSessionId, stream.exchangeId);
 			}
 		}
 	}
