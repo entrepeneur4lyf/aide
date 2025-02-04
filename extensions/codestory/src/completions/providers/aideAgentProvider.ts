@@ -530,7 +530,9 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 		};
 
 		try {
+			// Track if the stream has started processing events
 			let streamStarted = false;
+			// Flag to identify if we're handling a restored session from a previous connection
 			let isRestoredSession = false;
 
 			for await (const event of asyncIterable) {
@@ -539,12 +541,14 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					printEventDebug(event);
 				}
 
+				// Skip keep-alive events as they don't contain meaningful data
 				if ('keep_alive' in event) {
 					continue;
 				}
 
 				if ('session_id' in event && 'started' in event) {
-					// Check if this is a restored session
+					// Detect restored sessions by checking if the session ID matches but hasn't started
+					// This happens when reconnecting to an existing session
 					isRestoredSession = event.session_id === sessionId && !event.started;
 					if (!event.started) {
 						streamStarted = false;
@@ -553,11 +557,13 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 					continue;
 				}
 
-				// Skip initial exchange for restored sessions
+				// For restored sessions, skip initial event exchange until we're properly synchronized
+				// This prevents duplicate processing of events from the previous connection
 				if (isRestoredSession && !streamStarted) {
 					continue;
 				}
 
+				// Skip completion events as they're handled elsewhere
 				if ('done' in event) {
 					continue;
 				}
