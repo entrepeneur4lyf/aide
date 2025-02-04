@@ -502,7 +502,7 @@ class ModelActionsColumnRenderer implements ITableRenderer<IModelItemEntry, IMod
 
 	private createEditAction(modelSelectionItemEntry: IModelItemEntry): IAction {
 		return {
-			class: ThemeIcon.asClassName(settingsEditIcon),
+			class: `icon ${ThemeIcon.asClassName(settingsEditIcon)}`,
 			enabled: true,
 			id: 'editModelSelection',
 			label: localize('editModel', "Edit Model"),
