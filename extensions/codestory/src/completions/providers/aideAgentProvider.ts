@@ -78,18 +78,6 @@ class AideResponseStreamCollection {
 		}
 	}
 
-	// Returns all response streams whose keys start with the given sessionId
-	public getResponseStreamsForSession(sessionId: string): vscode.AideAgentEventSenderResponse[] {
-		const streams: vscode.AideAgentEventSenderResponse[] = [];
-		// Iterate over each entry in the map and filter by key prefix
-		this.responseStreamCollection.forEach((value, key) => {
-			if (key.startsWith(sessionId + '-')) {
-				streams.push(value);
-			}
-		});
-		return streams;
-	}
-
 	getAllResponseStreams(): vscode.AideAgentEventSenderResponse[] {
 		return Array.from(this.responseStreamCollection.values());
 	}
@@ -922,11 +910,6 @@ export class AideAgentSessionProvider implements vscode.AideSessionParticipant {
 	}
 
 	private async createNewResponseStream(sessionId: string): Promise<vscode.AideAgentEventSenderResponse | undefined> {
-		const existingStreams = this.responseStreamCollection.getResponseStreamsForSession(sessionId);
-		if (existingStreams.length > 0) {
-			// Return the most recently added response stream
-			return existingStreams[existingStreams.length - 1];
-		}
 		let responseStream: vscode.AideAgentEventSenderResponse | undefined;
 		const { exchange_id: exchangeId } = await this.newExchangeIdForSession(sessionId);
 		if (exchangeId) {
