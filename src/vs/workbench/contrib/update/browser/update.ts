@@ -222,16 +222,19 @@ export class UpdateContribution extends Disposable implements IWorkbenchContribu
 		this.updateStateContextKey.set(state.type);
 		this.statusBarEntryDisposable.clear();
 
-		if (state.type === StateType.AvailableForDownload || state.type === StateType.Downloaded || state.type === StateType.Ready) {
+		if (state.type === StateType.AvailableForDownload || state.type === StateType.Downloaded || state.type === StateType.Ready || state.type === StateType.Updating) {
 			const text = state.type === StateType.Ready ? `$(sync~spin) Ready to Update` : 
 				state.type === StateType.Downloaded ? `$(cloud-download) Update Downloaded` : 
+				state.type === StateType.Updating ? `$(sync~spin) Installing Update...` :
 				`$(cloud-download) Update Available`;
 			
 			const tooltip = state.type === StateType.Ready ? 
-				nls.localize('status.updateReadyTooltip', "A new update for {0} is ready to install. Click to restart and install.", this.productService.nameLong) :
+				nls.localize('status.updateReadyTooltip', "A new update for {0} is ready to install. Click to restart and install the update.", this.productService.nameLong) :
 				state.type === StateType.Downloaded ? 
-				nls.localize('status.updateDownloadedTooltip', "A new update for {0} has been downloaded. Click to install.", this.productService.nameLong) :
-				nls.localize('status.updateAvailableTooltip', "A new update for {0} is available. Click to download.", this.productService.nameLong);
+				nls.localize('status.updateDownloadedTooltip', "A new update for {0} has been downloaded. Click to install the update.", this.productService.nameLong) :
+				state.type === StateType.Updating ?
+				nls.localize('status.updateInstallingTooltip', "Installing update for {0}...", this.productService.nameLong) :
+				nls.localize('status.updateAvailableTooltip', "A new update for {0} is available. Click to download the update.", this.productService.nameLong);
 
 			const backgroundColor = state.type === StateType.Ready ? 
 				new ThemeColor(STATUS_BAR_ERROR_ITEM_BACKGROUND) :
@@ -244,15 +247,16 @@ export class UpdateContribution extends Disposable implements IWorkbenchContribu
 					name: nls.localize('status.updateStatus', "Update Status"),
 					text,
 					tooltip,
-					command: 'update.applyUpdate',
-					backgroundColor
+					command: state.type === StateType.Updating ? undefined : 'update.applyUpdate',
+					backgroundColor,
+					kind: backgroundColor ? 'prominent' : undefined
 				},
 				'status.update',
 				StatusbarAlignment.LEFT,
 				100
 			);
-		} else if (state.type === StateType.Idle || state.type === StateType.Disabled) {
-			// Clear status bar entry when update is complete or disabled
+		} else if (state.type === StateType.Idle || state.type === StateType.Disabled || state.type === StateType.Uninitialized) {
+			// Clear status bar entry when update is complete, disabled or uninitialized
 			this.statusBarEntryDisposable.clear();
 		}
 
