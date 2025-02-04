@@ -718,7 +718,7 @@ class ProviderActionsColumnRenderer implements ITableRenderer<IProviderItemEntry
 
 	private createEditAction(providerSelectionItemEntry: IProviderItemEntry): IAction {
 		return {
-			class: ThemeIcon.asClassName(settingsEditIcon),
+			class: `icon ${ThemeIcon.asClassName(settingsEditIcon)}`,
 			enabled: true,
 			id: 'editProviderSelection',
 			label: localize('editProvider', "Edit Provider"),
