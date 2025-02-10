@@ -8,6 +8,7 @@
 // import logger from '../logger';
 import { execCommand, runCommandAsync } from '../utilities/commandRunner';
 import logger from '../logger';
+import { SIDECAR_CLIENT } from '../extension';
 
 export const getGitRepoName = async (workingDirectory: string): Promise<string> => {
 	// Log the pwd here
@@ -92,4 +93,46 @@ export const getFilesInLastCommit = async (workingDirectory: string): Promise<st
 		finalFileList.push(filePath);
 	}
 	return finalFileList;
+};
+
+export const getStagedChanges = async (workingDirectory: string): Promise<string> => {
+    try {
+        const { stdout } = await runCommandAsync(workingDirectory, 'git', ['diff', '--staged']);
+        return stdout.trim();
+    } catch (error) {
+        return '';
+    }
+};
+
+export const generateCommitMessage = async (workingDirectory: string): Promise<string> => {
+    try {
+        // Get staged changes
+        const stagedDiff = await getStagedChanges(workingDirectory);
+        if (!stagedDiff) {
+            return 'No staged changes found';
+        }
+
+        // Get list of staged files
+        const { stdout: stagedFiles } = await runCommandAsync(workingDirectory, 'git', ['diff', '--staged', '--name-only']);
+        const files = stagedFiles.trim().split('\n');
+
+        // Prepare prompt for commit message generation
+        const prompt = `Generate a concise commit message in conventional commits format for the following changes:\n\nFiles changed:\n${files.join('\n')}\n\nChanges:\n${stagedDiff}\n\nThe commit message should follow the format: type(scope): description\nwhere type is one of: feat, fix, docs, style, refactor, test, chore\nKeep the message concise and descriptive.`;
+        
+        // Use sidecar client to generate commit message
+        if (SIDECAR_CLIENT) {
+            const response = await SIDECAR_CLIENT.getCompletion(prompt);
+            if (response && response.trim()) {
+                return response.trim();
+            }
+        }
+        
+        // Fallback to basic message if LLM fails
+        const fileCount = files.length;
+        const fileList = files.slice(0, 3).join(', ') + (fileCount > 3 ? ` and ${fileCount - 3} more files` : '');
+        return `feat: update ${fileList}`;
+    } catch (error) {
+        logger.error('Error generating commit message:', error);
+        return 'Error generating commit message';
+    }
 };
