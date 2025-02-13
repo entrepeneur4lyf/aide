@@ -665,12 +665,12 @@ export class ChatWidget extends Disposable implements IChatWidget {
 
 	private onDidChangeTreeContentHeight(): void {
 		if (this.tree.scrollHeight !== this.previousTreeScrollHeight) {
-			// Due to rounding, the scrollTop + renderHeight will not exactly match the scrollHeight.
-			// Consider the tree to be scrolled all the way down if it is within 2px of the bottom.
-			const lastElementWasVisible = this.tree.scrollTop + this.tree.renderHeight >= this.previousTreeScrollHeight - 2;
-			if (lastElementWasVisible) {
+			// Check if we're near the bottom of the list (within 2px)
+			const isNearBottom = this.tree.scrollTop + this.tree.renderHeight >= this.previousTreeScrollHeight - 2;
+			
+			if (isNearBottom) {
 				dom.scheduleAtNextAnimationFrame(dom.getWindow(this.listContainer), () => {
-					// Can't set scrollTop during this event listener, the list might overwrite the change
+					// Scroll to the new bottom
 					this.scrollToEnd();
 				}, 0);
 			}
