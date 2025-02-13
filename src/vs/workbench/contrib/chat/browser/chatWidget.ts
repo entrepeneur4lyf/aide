@@ -32,6 +32,7 @@ import { WorkbenchObjectTree } from '../../../../platform/list/browser/listServi
 import { ILogService } from '../../../../platform/log/common/log.js';
 import { IStorageService, StorageScope, StorageTarget } from '../../../../platform/storage/common/storage.js';
 import { ITelemetryService } from '../../../../platform/telemetry/common/telemetry.js';
+import { IConfigurationService } from '../../../../platform/configuration/common/configuration.js';
 import { buttonSecondaryBackground, buttonSecondaryForeground, buttonSecondaryHoverBackground } from '../../../../platform/theme/common/colorRegistry.js';
 import { asCssVariable } from '../../../../platform/theme/common/colorUtils.js';
 import { IThemeService } from '../../../../platform/theme/common/themeService.js';
@@ -234,6 +235,7 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		@IChatEditingService private readonly chatEditingService: IChatEditingService,
 		@IStorageService private readonly storageService: IStorageService,
 		@ITelemetryService private readonly telemetryService: ITelemetryService,
+		@IConfigurationService private readonly configurationService: IConfigurationService,
 	) {
 		super();
 
@@ -373,6 +375,13 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		}
 
 		this._register(this.onDidChangeParsedInput(() => this.updateChatInputContext()));
+
+		this._register(this.configurationService.onDidChangeConfiguration(e => {
+			if (e.affectsConfiguration('chat.autoScroll.enabled')) {
+				this.updateScrollLockFromConfig();
+			}
+		}));
+		this.updateScrollLockFromConfig();
 	}
 
 	private _lastSelectedAgent: IChatAgentData | undefined;
@@ -469,6 +478,14 @@ export class ChatWidget extends Disposable implements IChatWidget {
 		if (this.lastItem) {
 			const offset = Math.max(this.lastItem.currentRenderedHeight ?? 0, 1e6);
 			this.tree.reveal(this.lastItem, offset);
+		}
+	}
+
+	private updateScrollLockFromConfig(): void {
+		const autoScrollEnabled = this.configurationService.getValue<boolean>('chat.autoScroll.enabled') ?? this.viewOptions.autoScroll;
+		if (autoScrollEnabled) {
+			this.scrollLock = true;
+			this.scrollToEnd();
 		}
 	}
 
