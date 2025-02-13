@@ -664,10 +664,15 @@ export class ChatWidget extends Disposable implements IChatWidget {
 	}
 
 	private onDidChangeTreeContentHeight(): void {
+		// Store current scroll info before any changes
+		const scrollTop = this.tree.scrollTop;
+		const renderHeight = this.tree.renderHeight;
+		const currentScrollBottom = scrollTop + renderHeight;
+		
+		// Check if we're near the bottom of the list (within 2px)
+		const isNearBottom = currentScrollBottom >= this.previousTreeScrollHeight - 2;
+		
 		if (this.tree.scrollHeight !== this.previousTreeScrollHeight) {
-			// Check if we're near the bottom of the list (within 2px)
-			const isNearBottom = this.tree.scrollTop + this.tree.renderHeight >= this.previousTreeScrollHeight - 2;
-			
 			if (isNearBottom) {
 				dom.scheduleAtNextAnimationFrame(dom.getWindow(this.listContainer), () => {
 					// Scroll to the new bottom
