@@ -453,6 +453,33 @@ export class ChatWidget extends Disposable implements IChatWidget {
 			this.scrollToEnd();
 		}));
 
+		// After the scroll-down button code
+		const autoScrollCheckbox = document.createElement('input');
+		autoScrollCheckbox.type = 'checkbox';
+		autoScrollCheckbox.className = 'chat-auto-scroll-checkbox';
+		autoScrollCheckbox.checked = this.configurationService.getValue<boolean>('chat.autoScroll.enabled') ?? this.viewOptions.autoScroll;
+		autoScrollCheckbox.title = localize('autoScrollCheckboxLabel', "Auto-scroll to new messages");
+
+		const autoScrollContainer = document.createElement('div');
+		autoScrollContainer.className = 'chat-auto-scroll-container';
+		autoScrollContainer.appendChild(autoScrollCheckbox);
+		this.listContainer.appendChild(autoScrollContainer);
+
+		this._register(dom.addDisposableListener(autoScrollCheckbox, dom.EventType.CHANGE, () => {
+			this.configurationService.updateValue('chat.autoScroll.enabled', autoScrollCheckbox.checked);
+			this.scrollLock = autoScrollCheckbox.checked;
+			if (autoScrollCheckbox.checked) {
+				this.scrollToEnd();
+			}
+		}));
+
+		this._register(this.configurationService.onDidChangeConfiguration(e => {
+			if (e.affectsConfiguration('chat.autoScroll.enabled')) {
+				const autoScrollEnabled = this.configurationService.getValue<boolean>('chat.autoScroll.enabled') ?? this.viewOptions.autoScroll;
+				autoScrollCheckbox.checked = autoScrollEnabled;
+			}
+		}));
+
 		this._register(this.editorOptions.onDidChange(() => this.onDidStyleChange()));
 		this.onDidStyleChange();
 
