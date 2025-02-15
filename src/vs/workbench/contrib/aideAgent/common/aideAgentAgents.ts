@@ -166,6 +166,7 @@ export interface IChatAgentRequest {
 	rejectedConfirmationData?: any[];
 	userSelectedModelId?: string;
 	isDevtoolsContext: boolean;
+	inputTokens?: number;
 }
 
 export interface IChatQuestion {
