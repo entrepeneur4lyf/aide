@@ -29,11 +29,11 @@ To improve transparency and follow best practices for open source projects, the 
 
 The following files in the repository reference the external binaries repository:
 
-- `extensions/open-remote-wsl/src/serverSetup.ts`
-- `extensions/open-remote-wsl/package.json`
-- `extensions/open-remote-ssh/src/serverSetup.ts`
-- `extensions/open-remote-ssh/package.json`
-- `README.md` (for version badge)
+- [`extensions/open-remote-wsl/src/serverSetup.ts`](extensions/open-remote-wsl/src/serverSetup.ts)
+- [`extensions/open-remote-wsl/package.json`](extensions/open-remote-wsl/package.json)
+- [`extensions/open-remote-ssh/src/serverSetup.ts`](extensions/open-remote-ssh/src/serverSetup.ts)
+- [`extensions/open-remote-ssh/package.json`](extensions/open-remote-ssh/package.json)
+- [`README.md`](README.md) (for version badge)
 
 ## Next Steps
 
